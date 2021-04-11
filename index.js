@@ -74,15 +74,16 @@ module.exports.init = function(path, app, dbName, sessions)
 	return app;
 }
 
-module.exports.createServer = function(app)
+module.exports.https = function(app)
 {
 	server = require('https').createServer({
 		key: fs.readFileSync((process.env.SSL_KEY_PATH || '../root/sslcert') + '/privkey.pem'),
 		cert: fs.readFileSync((process.env.SSL_KEY_PATH || '../root/sslcert') + '/fullchain.pem')
 	}, app);
+	return server;
 }
 
-module.exports.startServer = function(app)
+module.exports.start = function(app)
 {
 	console.log('----------------------------------------------');
 	console.log('----------------------------------------------');
@@ -95,9 +96,11 @@ module.exports.startServer = function(app)
 		console.log('* http service listening on port', app.get('http_port'));
 	});
 
-	server.listen(app.get('https_port'), function(){
-		console.log('* https service listening on port', server.address().port);
-	});
+	if (server){
+		server.listen(app.get('https_port'), function(){
+			console.log('* https service listening on port', server.address().port);
+		});
+	}
 
 }
 
