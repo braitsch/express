@@ -31,8 +31,8 @@ module.exports.init = function(path, app, dbName, sessions)
 	app.use(express.static(path + '/public'));
 //	disable case sensitive urls //
 	app.use(function(req, res, next){
-		if (req.path.toLowerCase() !== req.path) {
-			res.redirect(req.originalUrl.pathname.toLowerCase());
+		if (req.method === 'GET' && req.path.toLowerCase() !== req.path) {
+			res.redirect(req.path.toLowerCase());
 		} else {
 			next();
 		}
