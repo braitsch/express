@@ -28,8 +28,7 @@ module.exports.init = function(path, app, dbName, sessions)
 	app.set('views',  path + '/server/views');
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
-	app.use(express.static(path + '/public'));
-//	disable case sensitive urls //
+//	force get requests to lowercase //
 	app.use(function(req, res, next){
 		if (req.method === 'GET' && req.path.toLowerCase() !== req.path) {
 			res.redirect(req.path.toLowerCase());
@@ -74,7 +73,7 @@ module.exports.init = function(path, app, dbName, sessions)
 		}
 	}
 // attach project specific configuration //
-	require(path + '/config')(app);
+	require(path + '/config')(app, express);
 	return app;
 }
 
