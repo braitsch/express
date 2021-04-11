@@ -123,8 +123,9 @@ module.exports.log = function(logdir)
 {
 	if (fs.existsSync(logdir) == false) {
 		var str = moment(new Date()).format('MMMM Do YYYY h:mm:ssA') + ' :: ';
-		fs.mkdir(logdir, { recursive: true }, (err) => { if (err) throw err; });
-		fs.writeFileSync(logdir + '/app.log', str + 'initializing app.log' + '\n');
+		fs.mkdir(logdir, { recursive: true }, (e) => { 
+			e ? console.log(e) : fs.writeFileSync(logdir + '/app.log', str + 'initializing app.log' + '\n');
+		});
 	}
 	global.log = function()
 	{
