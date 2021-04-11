@@ -23,9 +23,13 @@ const app = express();
 
 express.log('./logs');
 
-// enable https (optional) //
-
-express.https(app);
+// create a server //
+// 1. app instance (required)
+// 2. port (optional) http defaults to 8080, https to 8443
+// 3. keypath (optional) defaults to ./ssl
+const server = express.http(app, port);
+// or //
+const server = express.https(app, port, keypath);
 
 // initialize app //
 // 1. path to project root (required)

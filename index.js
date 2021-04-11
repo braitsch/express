@@ -9,6 +9,8 @@ const moment 	= require('moment');
 const mnstore 	= require('connect-mongo');
 const session	= require('express-session');
 
+let http, https = undefined;
+
 module.exports = function()
 {
 	return express();
@@ -36,12 +38,14 @@ module.exports.init = function(path, app, dbName, sessions)
 		}
 	});
 // redirect all http traffic to https //
-	app.use(function (req, res, next) {
-		if (req.url.indexOf('.well-known/acme-challenge/') == -1 && !req.secure){
-			return res.redirect(['https://', req.get('Host'), req.url].join(''));
-		}
-		next();
-	});
+	if (app.get('https_enabled') === true){
+		app.use(function (req, res, next) {
+			if (req.url.indexOf('.well-known/acme-challenge/') == -1 && !req.secure){
+				return res.redirect(['https://', req.get('Host'), req.url].join(''));
+			}
+			next();
+		});
+	}
 // redirect www to non-www //
 	app.use(function(req, res, next) {
 		if (req.headers.host && req.headers.host.slice(0, 4) === 'www.') {
@@ -74,13 +78,22 @@ module.exports.init = function(path, app, dbName, sessions)
 	return app;
 }
 
-module.exports.https = function(app)
+module.exports.http = function(app, port)
 {
-	server = require('https').createServer({
-		key: fs.readFileSync((process.env.SSL_KEY_PATH || '../root/sslcert') + '/privkey.pem'),
-		cert: fs.readFileSync((process.env.SSL_KEY_PATH || '../root/sslcert') + '/fullchain.pem')
+	http = require('http').createServer(app);
+	if (port) app.set('http_port', port);
+	return http;
+}
+
+module.exports.https = function(app, port, keypath)
+{
+	https = require('https').createServer({
+		key: fs.readFileSync((keypath || process.env.SSL_KEY_PATH || './ssl') + '/privkey.pem'),
+		cert: fs.readFileSync((keypath || process.env.SSL_KEY_PATH || './ssl') + '/fullchain.pem')
 	}, app);
-	return server;
+	app.set('https_enabled', true);
+	if (port) app.set('https_port', port);
+	return https;
 }
 
 module.exports.start = function(app)
@@ -92,13 +105,15 @@ module.exports.start = function(app)
 	console.log('----------------------------------------------');
 	console.log('----------------------------------------------');
 
-	require('http').createServer(app).listen(app.get('http_port'), function () {
+	if (http === undefined) http = require('http').createServer(app);
+
+	http.listen(app.get('http_port'), function () {
 		console.log('* http service listening on port', app.get('http_port'));
 	});
 
-	if (server){
-		server.listen(app.get('https_port'), function(){
-			console.log('* https service listening on port', server.address().port);
+	if (https){
+		https.listen(app.get('https_port'), function(){
+			console.log('* https service listening on port', https.address().port);
 		});
 	}
 
