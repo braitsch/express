@@ -65,7 +65,7 @@ module.exports.init = function(path, app, dbName, sessions)
 				saveUninitialized: false,
 				cookie: {
 					httpOnly: true,
-					secure: process.env.NODE_ENV === 'production' ? true : false,
+					secure: app.get('https_enabled'),
 					maxAge: 1209600000 }, // two weeks
 				secret: process.env.SECRET || 'faeb4453e5d14fe6f6d04637f78077c76c73d1bxxxx',
 				store: mnstore.create({ mongoUrl: app.get('DB_URL') + '/' + app.get('DB_NAME') })
