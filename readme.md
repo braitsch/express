@@ -51,10 +51,13 @@ express.start(app);
 
 const busboy = require('connect-busboy');
 
-module.exports = function(app) {
+module.exports = function(app, express) {
 
-	app.locals.cdn = 'https://storage.googleapis.com/braitsch';
+// insert middleware //
 	app.use(busboy());
+// make static assets public //
+	app.use(express.static(__dirname + '/public'));
+// attach your database & routers //
 	require(__dirname + '/server/model/database')(app);
 	require(__dirname + '/server/routes/public')(app);
 
@@ -65,3 +68,27 @@ module.exports = function(app) {
 }
 ```
 
+**Database.js (optional)**
+
+```
+const MongoClient = require('mongodb').MongoClient;
+
+module.exports = function(app) {
+	MongoClient.connect(app.get('DB_URL'), {useNewUrlParser: true, useUnifiedTopology: true}, 	function(e, client) {
+		if (e){
+			console.log(e);
+		}   else{
+			const db = client.db(app.get('DB_NAME'));
+		// initialize your collections here //
+			log('mongo :: connected to database :: "'+app.get('DB_NAME')+'"');
+		}
+	});
+}
+```
+
+Take a look at any of the following projects for example usage:
+
+- https://node-login.braitsch.io/
+- https://chat.braitsch.io/
+- https://js3.braitsch.io/
+- https://doodle.braitsch.io/

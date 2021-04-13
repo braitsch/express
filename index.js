@@ -10,6 +10,7 @@ const mnstore 	= require('connect-mongo');
 const session	= require('express-session');
 
 let http, https = undefined;
+const CERTBOT_PATH = '/.well-known/acme-challenge';
 
 module.exports = function()
 {
@@ -28,9 +29,12 @@ module.exports.init = function(path, app, dbName, sessions)
 	app.set('views',  path + '/server/views');
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
-//	force get requests to lowercase //
+//	convert all get requests to lowercase //
 	app.use(function(req, res, next){
-		if (req.method === 'GET' && req.path.toLowerCase() !== req.path) {
+		if (req.method === 'GET' 
+			&& req.path.toLowerCase() !== req.path 
+			&& req.url.indexOf(CERTBOT_PATH) == -1)
+		{
 			res.redirect(req.path.toLowerCase());
 		} else {
 			next();
@@ -39,7 +43,7 @@ module.exports.init = function(path, app, dbName, sessions)
 // redirect all http traffic to https //
 	if (app.get('https_enabled') === true){
 		app.use(function (req, res, next) {
-			if (req.url.indexOf('.well-known/acme-challenge/') == -1 && !req.secure){
+			if (!req.secure && req.url.indexOf(CERTBOT_PATH) == -1){
 				return res.redirect(['https://', req.get('Host'), req.url].join(''));
 			}
 			next();
