@@ -41,7 +41,7 @@ module.exports.init = function(path, app, dbName, sessions)
 		}
 	});
 // redirect all http traffic to https //
-	if (app.get('https_enabled') === true){
+	if (process.env.HTTPS === 'true'){
 		app.use(function (req, res, next) {
 			if (!req.secure && req.url.indexOf(CERTBOT_PATH) == -1){
 				return res.redirect(['https://', req.get('Host'), req.url].join(''));
@@ -69,7 +69,7 @@ module.exports.init = function(path, app, dbName, sessions)
 				saveUninitialized: false,
 				cookie: {
 					httpOnly: true,
-					secure: app.get('https_enabled'),
+					secure: process.env.HTTPS === 'true',
 					maxAge: 1209600000 }, // two weeks
 				secret: process.env.SECRET || 'faeb4453e5d14fe6f6d04637f78077c76c73d1bxxxx',
 				store: mnstore.create({ mongoUrl: app.get('DB_URL') + '/' + app.get('DB_NAME') })
@@ -94,7 +94,6 @@ module.exports.https = function(app, port, keypath)
 		key: fs.readFileSync((keypath || process.env.SSL_KEY_PATH || './ssl') + '/privkey.pem'),
 		cert: fs.readFileSync((keypath || process.env.SSL_KEY_PATH || './ssl') + '/fullchain.pem')
 	}, app);
-	app.set('https_enabled', true);
 	if (port) app.set('https_port', port);
 	return https;
 }
