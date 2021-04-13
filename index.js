@@ -137,5 +137,21 @@ module.exports.log = function(logdir)
 	}
 }
 
+// basic http authentication //
+global.auth = (req, res, next) => {
+	const auth = {login: process.env.ADMIN_USER, password: process.env.ADMIN_PASS};
+	const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+	const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+	if (login && password){
+		if (login === auth.login && password === auth.password){
+			return next();
+		}	else{
+			log('login attempt at:', req.url, login, password, req.ip);
+		}
+	}
+	res.set('WWW-Authenticate', 'Basic realm="401"');
+	res.status(401).send('Authentication Required');
+};
+
 global.guid = function(){return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {var r = Math.random()*16|0,v=c=='x'?r:r&0x3|0x8;return v.toString(16);});}
 
