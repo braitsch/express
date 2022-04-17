@@ -1,6 +1,6 @@
 ## @braitsch/express
 
-Simplifies setting up an Express.js app with a variey of helpful utility functions.
+Simplifies setting up an Express.js app and provides a variey of helpful utility functions.
 
 #### **Installation**
 
@@ -20,29 +20,25 @@ const express = require("@braitsch/express");
 
 // create an app //
 
-const app = express();
+const app = express({path:__dirname, db:'transpomaps', sessions:true});
+
+// path: to project root (required)
+// db: database name (optional)
+// sessions: enable sessions (optional)
+
 
 // enable logging & set log directory (optional) //
 
 express.log('./logs');
 
-// create a server //
-const server = express.http(app, port);
+// create and start a server //
+express.http(app, port);
 // or //
-const server = express.https(app, port, keypath);
+express.https(app, port, keypath);
 // 1. app: your app instance (required)
 // 2. port: http defaults to 8080, https to 8443
 // 3. keypath: keypath || process.env.SSL_KEY_PATH || './ssl'
 
-// initialize app //
-express.init(__dirname, app, 'my-database', true);
-// 1. path to project root (required)
-// 2. app instance (optional)
-// 3. database name (optional)
-// 4. enable sessions (optional)
-
-// start the server //
-express.start(app);
 ```
 
 **Config.js**
@@ -62,8 +58,11 @@ module.exports = function(app, express) {
 	require(__dirname + '/server/model/database')(app);
 	require(__dirname + '/server/routes/public')(app);
 
-// watch and autocompile js/css if running locally
+// if using socket.io you can easily bind req.session to a socket.io namespace //
+	const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
+	io.of('/namespace').use(wrap(app.sessionMiddleware));
 
+// watch and autocompile js/css if running locally
 	if (process.env.NODE_ENV == 'localhost') require('./gulpfile').watch();
 
 }
@@ -71,7 +70,7 @@ module.exports = function(app, express) {
 
 **Database.js (optional)**
 
-This module also generates a Mongodb url if you pass a database name to `express.init`. It will also setup `express-session` for you if you pass true as the fourth parameter to `express.init`.
+This module also generates a MongoDB URL if you pass a database name to `express.init`. It will also setup `express-session` for you and expose the middleware via `app.sessionMiddleware` if you pass `true` as the fourth parameter to `express.init`.
 
 ```
 const MongoClient = require('mongodb').MongoClient;
@@ -89,7 +88,7 @@ module.exports = function(app) {
 }
 ```
 
-#### Utilities
+#### Global Utility Functions
 
 **guid**
 

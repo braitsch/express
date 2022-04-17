@@ -9,7 +9,6 @@ const moment 	= require('moment');
 const mnstore 	= require('connect-mongo');
 const session	= require('express-session');
 
-let http, https = undefined;
 const CERTBOT_PATH = '/.well-known/acme-challenge';
 
 module.exports = function()
@@ -21,8 +20,6 @@ module.exports.init = function(path, app, dbName, sessions)
 {
 	app = app || express();
 	app.set('host', process.env.NODE_ENV || 'localhost');
-	app.set('http_port', process.env.HTTP_PORT || 8080);
-	app.set('https_port', process.env.HTTPS_PORT || 8443);
 	app.locals.moment = moment;
 	app.locals.pretty = process.env.NODE_ENV == 'localhost';
 	app.set('view engine', 'pug');
@@ -53,7 +50,7 @@ module.exports.init = function(path, app, dbName, sessions)
 		app.set('DB_PORT', process.env.DB_PORT || 27017);
 		app.set('DB_URL', process.env.DB_URL || 'mongodb://' + app.get('DB_HOST') + ':' + app.get('DB_PORT'));
 		if (sessions){
-			app.use(session({
+			app.sessionMiddleware = session({
 				resave: false,
 				saveUninitialized: false,
 				cookie: {
@@ -62,7 +59,8 @@ module.exports.init = function(path, app, dbName, sessions)
 					maxAge: 1209600000 }, // two weeks
 				secret: process.env.SECRET || 'faeb4453e5d14fe6f6d04637f78077c76c73d1bxxxx',
 				store: mnstore.create({ mongoUrl: app.get('DB_URL') + '/' + app.get('DB_NAME') })
-			}));
+			});
+			app.use(app.sessionMiddleware);
 		}
 	}
 // attach project specific configuration //
@@ -72,42 +70,30 @@ module.exports.init = function(path, app, dbName, sessions)
 
 module.exports.http = function(app, port)
 {
-	http = require('http').createServer(app);
-	if (port) app.set('http_port', port);
-	return http;
+	app.set('port', port || process.env.HTTP_PORT || 8080);
+	require('http').createServer(app).listen(app.get('port'), () => {
+		console.log('* http server listening on port', app.get('port'));
+	});
 }
 
 module.exports.https = function(app, port, keypath)
 {
-	https = require('https').createServer({
+	app.set('port', port || process.env.HTTPS_PORT || 8443);
+	require('https').createServer({
 		key: fs.readFileSync((keypath || process.env.SSL_KEY_PATH || './ssl') + '/privkey.pem'),
 		cert: fs.readFileSync((keypath || process.env.SSL_KEY_PATH || './ssl') + '/fullchain.pem')
-	}, app);
-	if (port) app.set('https_port', port);
-	return https;
+	}, app).listen(app.get('port'), () => {
+		console.log('* https server listening on port', app.get('port'));
+	});
 }
 
-module.exports.start = function(app)
+module.exports.redirect = function(port1, port2)
 {
-	console.log('----------------------------------------------');
-	console.log('----------------------------------------------');
-	console.log('--------------------SERVER--------------------');
-	console.log('------------------RESTARTING------------------');
-	console.log('----------------------------------------------');
-	console.log('----------------------------------------------');
-
-	if (http === undefined) http = require('http').createServer(app);
-
-	http.listen(app.get('http_port'), function () {
-		console.log('* http service listening on port', app.get('http_port'));
+	let app = express();
+	app.use(require('redirect-ssl').create({ redirectPort: port2 }))
+	app.listen(port1, () => {
+		console.log('* http server listening on port', port1, '> redirecting traffic to', port2);
 	});
-
-	if (https){
-		https.listen(app.get('https_port'), function(){
-			console.log('* https service listening on port', https.address().port);
-		});
-	}
-
 }
 
 module.exports.log = function(logdir)
