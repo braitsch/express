@@ -11,19 +11,14 @@ const session	= require('express-session');
 
 const CERTBOT_PATH = '/.well-known/acme-challenge';
 
-module.exports = function()
+module.exports = function(options)
 {
-	return express();
-}
-
-module.exports.init = function(path, app, dbName, sessions)
-{
-	app = app || express();
+	app = express();
 	app.set('host', process.env.NODE_ENV || 'localhost');
 	app.locals.moment = moment;
 	app.locals.pretty = process.env.NODE_ENV == 'localhost';
 	app.set('view engine', 'pug');
-	app.set('views',  path + '/server/views');
+	app.set('views',  options.path + '/server/views');
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
 // redirect all http traffic to https //
@@ -44,12 +39,12 @@ module.exports.init = function(path, app, dbName, sessions)
 		next();
 	});
 // database configuration //
-	if (process.env.DB_NAME || dbName){
-		app.set('DB_NAME', process.env.DB_NAME || dbName);
+	if (process.env.DB_NAME || options.db){
+		app.set('DB_NAME', process.env.DB_NAME || options.db);
 		app.set('DB_HOST', process.env.DB_HOST || 'localhost');
 		app.set('DB_PORT', process.env.DB_PORT || 27017);
 		app.set('DB_URL', process.env.DB_URL || 'mongodb://' + app.get('DB_HOST') + ':' + app.get('DB_PORT'));
-		if (sessions){
+		if (options.sessions){
 			app.sessionMiddleware = session({
 				resave: false,
 				saveUninitialized: false,
@@ -64,7 +59,7 @@ module.exports.init = function(path, app, dbName, sessions)
 		}
 	}
 // attach project specific configuration //
-	require(path + '/config')(app, express);
+	require(options.path + '/config')(app, express);
 	return app;
 }
 
