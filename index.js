@@ -82,12 +82,17 @@ module.exports.https = function(app, port, keypath)
 	});
 }
 
-module.exports.redirect = function(port1, port2)
+module.exports.toHTTPS = function(port)
 {
 	let app = express();
-	app.use(require('redirect-ssl').create({ redirectPort: port2 }))
-	app.listen(port1, () => {
-		console.log('* http server listening on port', port1, '> redirecting traffic to', port2);
+	app.use(function (req, res, next) {
+		if (!req.secure){
+			return res.redirect(['https://', req.get('Host'), req.url].join(''));
+		}
+		next();
+	});
+	app.listen(port, () => {
+		console.log('* http server listening on port', port, '> redirecting all traffic to https');
 	});
 }
 
