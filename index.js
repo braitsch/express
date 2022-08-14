@@ -107,7 +107,13 @@ module.exports.log = function(logdir)
 	global.log = function()
 	{
 		var str = moment().format('MMMM Do YYYY h:mm:ssA') + ' :: ';
-		for (const p in arguments) str += arguments[p] + ' ';
+		for (const p in arguments) {
+			if (typeof arguments[p] === 'object'){
+				str += JSON.stringify(arguments[p]) + ' ';
+			}	else{
+				str += arguments[p] + ' ';
+			}
+		}
 		fs.appendFile(logdir + '/app.log', str + '\n', (e) => { console.log(str); });
 	}
 }
