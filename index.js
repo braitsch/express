@@ -1,6 +1,7 @@
 
 /*
-	boilerplate for initializing an express app
+	Template for Initializing an Express App w/ MongoDB
+	Author :: Stephen Braitsch
 */
 
 const fs 		= require('fs')
@@ -16,14 +17,24 @@ module.exports = function(options)
 	app = express();
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
-// redirect www to non-www //
-	app.use(function(req, res, next) {
+	if (process.env.REDIRECT_HTTP_TO_HTTPS == 'true'){
+		app.use(function(req, res, next) {
+			if (!req.secure && req.url.indexOf(CERTBOT_PATH) == -1){
+				if (req.headers.host.includes(':')){
+					req.headers.host = req.headers.host.split(':')[0]+':'+(process.env.HTTPS_PORT || 8443);
+				}
+				return res.redirect(['https://', req.headers.host, req.url].join(''));
+			}
+			next();
+		});
+	}
+	if (process.env.REDIRECT_WWW == 'true'){ // redirect www to non-www //
 		if (req.headers.host && req.headers.host.slice(0, 4) === 'www.') {
 			var newHost = req.headers.host.slice(4);
 			return res.redirect(301, req.protocol + '://' + newHost + req.originalUrl);
 		}
 		next();
-	});
+	}
 // database configuration //
 	if (process.env.DB_NAME || options.db){
 		app.set('DB_NAME', process.env.DB_NAME || options.db);
@@ -65,16 +76,6 @@ module.exports.https = function(app, port, keypath)
 		cert: fs.readFileSync((keypath || process.env.SSL_KEY_PATH || './ssl') + '/fullchain.pem')
 	}, app).listen(app.get('https_port'), () => {
 		console.log('* https server listening on port', app.get('https_port'));
-	});
-}
-
-module.exports.redirectHTTPToHTTPS = (app) => {
-// redirect all insecure traffic to this https server //
-	app.use(function (req, res, next) {
-		if (!req.secure && req.url.indexOf(CERTBOT_PATH) == -1){
-			return res.redirect(['https://', req.get('Host'), req.url].join(''));
-		}
-		next();
 	});
 }
 
