@@ -3,33 +3,19 @@
 	boilerplate for initializing an express app
 */
 
-const fs 		= require('fs');
-const express 	= require('express');
-const moment 	= require('moment');
-const mnstore 	= require('connect-mongo');
-const session	= require('express-session');
+const fs 		= require('fs')
+const express 	= require('express')
+const moment 	= require('moment')
+const mnstore 	= require('connect-mongo')
+const session	= require('express-session')
 
-const CERTBOT_PATH = '/.well-known/acme-challenge';
+const CERTBOT_PATH = '/.well-known/acme-challenge'
 
 module.exports = function(options)
 {
 	app = express();
-	app.set('host', process.env.NODE_ENV || 'localhost');
-	app.locals.moment = moment;
-	app.locals.pretty = process.env.NODE_ENV == 'localhost';
-	app.set('view engine', 'pug');
-	app.set('views',  options.path + '/server/views');
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
-// redirect all http traffic to https //
-	if (process.env.HTTPS === 'true'){
-		app.use(function (req, res, next) {
-			if (!req.secure && req.url.indexOf(CERTBOT_PATH) == -1){
-				return res.redirect(['https://', req.get('Host'), req.url].join(''));
-			}
-			next();
-		});
-	}
 // redirect www to non-www //
 	app.use(function(req, res, next) {
 		if (req.headers.host && req.headers.host.slice(0, 4) === 'www.') {
@@ -65,34 +51,30 @@ module.exports = function(options)
 
 module.exports.http = function(app, port)
 {
-	app.set('port', port || process.env.HTTP_PORT || 8080);
-	require('http').createServer(app).listen(app.get('port'), () => {
-		console.log('* http server listening on port', app.get('port'));
+	app.set('http_port', port || process.env.HTTP_PORT || 8080);
+	require('http').createServer(app).listen(app.get('http_port'), () => {
+		console.log('* http server listening on port', app.get('http_port'));
 	});
 }
 
 module.exports.https = function(app, port, keypath)
 {
-	app.set('port', port || process.env.HTTPS_PORT || 8443);
+	app.set('https_port', port || process.env.HTTPS_PORT || 8443);
 	require('https').createServer({
 		key: fs.readFileSync((keypath || process.env.SSL_KEY_PATH || './ssl') + '/privkey.pem'),
 		cert: fs.readFileSync((keypath || process.env.SSL_KEY_PATH || './ssl') + '/fullchain.pem')
-	}, app).listen(app.get('port'), () => {
-		console.log('* https server listening on port', app.get('port'));
+	}, app).listen(app.get('https_port'), () => {
+		console.log('* https server listening on port', app.get('https_port'));
 	});
 }
 
-module.exports.toHTTPS = function(port)
-{
-	let app = express();
+module.exports.redirectHTTPToHTTPS = (app) => {
+// redirect all insecure traffic to this https server //
 	app.use(function (req, res, next) {
-		if (!req.secure){
+		if (!req.secure && req.url.indexOf(CERTBOT_PATH) == -1){
 			return res.redirect(['https://', req.get('Host'), req.url].join(''));
 		}
 		next();
-	});
-	app.listen(port, () => {
-		console.log('* http server listening on port', port, '> redirecting all traffic to https');
 	});
 }
 
