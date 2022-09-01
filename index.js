@@ -97,7 +97,8 @@ module.exports.log = function(logdir)
 				str += arguments[p] + ' ';
 			}
 		}
-		fs.appendFile(logdir + '/app.log', str + '\n', (e) => { console.log(str); });
+		console.log(str);
+		fs.appendFileSync(logdir + '/app.log', str + '\n');
 	}
 }
 
